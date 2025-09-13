@@ -2,6 +2,8 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Calculator_PR1_PKS", "Calculator_PR1_PKS\Calculator_PR1_PKS.csproj", "{A2D8D721-F567-4F43-8CF7-EFECC772CB8B}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Task_PR_13-09-2025", "Task_PR_13-09-2025\Task_PR_13-09-2025.csproj", "{885B01F3-4014-4369-99C9-1063B0AB5E26}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -12,5 +14,9 @@ Global
 		{A2D8D721-F567-4F43-8CF7-EFECC772CB8B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A2D8D721-F567-4F43-8CF7-EFECC772CB8B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A2D8D721-F567-4F43-8CF7-EFECC772CB8B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{885B01F3-4014-4369-99C9-1063B0AB5E26}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{885B01F3-4014-4369-99C9-1063B0AB5E26}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{885B01F3-4014-4369-99C9-1063B0AB5E26}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{885B01F3-4014-4369-99C9-1063B0AB5E26}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
