@@ -72,7 +72,7 @@ internal static class Program
         Console.WriteLine($" Память: {_memory.ToString(CultureInfo.InvariantCulture)} | Last: {_last.ToString(CultureInfo.InvariantCulture)}\n");
     }
 
-    // === Память ===
+    // память
     private static void MemoryPlus()
     {
         _memory += _last;
@@ -97,7 +97,7 @@ internal static class Program
         Console.WriteLine("Last сброшен в 0\n");
     }
 
-    // === Бинарные операции ===
+    // бинарные операции
     private static void DoBinary(string op)
     {
         var a = ReadDouble("Введите a: ");
@@ -124,7 +124,7 @@ internal static class Program
         }
     }
 
-    // === Унарные операции ===
+    // унарные операции
     private static void DoUnary(string op)
     {
         var x = ReadDouble("Введите x: ");
@@ -148,7 +148,7 @@ internal static class Program
         }
     }
 
-    // === Низкоуровневые проверки ===
+    // проверки
     private static double Divide(double a, double b)
     {
         if (b == 0.0)
@@ -177,7 +177,7 @@ internal static class Program
         return Math.Sqrt(x);
     }
 
-    // Надёжный ввод double: поддержка точки и запятой
+    // поддержка точки и запятой
     private static double ReadDouble(string prompt)
     {
         while (true)
