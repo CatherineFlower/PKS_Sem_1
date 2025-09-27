@@ -29,7 +29,7 @@ internal static class Program
                 case "2": DoBinary("-"); break;
                 case "3": DoBinary("*"); break;
                 case "4": DoBinary("/"); break;
-                case "5": DoBinary("%"); break;
+                case "5": DoUnary("%"); break;
 
                 case "6": DoUnary("1/x"); break;
                 case "7": DoUnary("x^2"); break;
@@ -65,7 +65,7 @@ internal static class Program
     {
         Console.WriteLine("Меню:");
         Console.WriteLine(" 1) a + b       2) a - b       3) a * b");
-        Console.WriteLine(" 4) a / b       5) a % b");
+        Console.WriteLine(" 4) a / b       5) % (унарно)");
         Console.WriteLine(" 6) 1/x (унарно)  7) x^2 (унарно)  8) √x (унарно)");
         Console.WriteLine(" m+, m-, mr — операции памяти");
         Console.WriteLine(" c — сбросить последний результат, q/exit — выход");
@@ -110,8 +110,7 @@ internal static class Program
                 "+" => a + b,
                 "-" => a - b,
                 "*" => a * b,
-                "/" => Divide(a, b),
-                "%" => Mod(a, b),
+                "/" => b == 0 ? throw new DivideByZeroException("Деление на ноль запрещено") : a / b,
                 _ => throw new InvalidOperationException("Неизвестная операция")
             };
 
@@ -136,6 +135,7 @@ internal static class Program
                 "1/x" => Reciprocal(x),
                 "x^2" => x * x,
                 "sqrt" => SqrtChecked(x),
+                "%" => x / 100.0,
                 _ => throw new InvalidOperationException("Неизвестная операция")
             };
 
@@ -149,19 +149,19 @@ internal static class Program
     }
 
     // проверки
-    private static double Divide(double a, double b)
-    {
-        if (b == 0.0)
-            throw new DivideByZeroException("Деление на ноль запрещено");
-        return a / b;
-    }
-
-    private static double Mod(double a, double b)
-    {
-        if (b == 0.0)
-            throw new DivideByZeroException("Остаток по модулю на 0 не определён");
-        return a % b;
-    }
+    // private static double Divide(double a, double b)
+    // {
+    //     if (b == 0.0)
+    //         throw new DivideByZeroException("Деление на ноль запрещено");
+    //     return a / b;
+    // }
+    //
+    // private static double Mod(double a, double b)
+    // {
+    //     if (b == 0.0)
+    //         throw new DivideByZeroException("Остаток по модулю на 0 не определён");
+    //     return a % b;
+    // }
 
     private static double Reciprocal(double x)
     {

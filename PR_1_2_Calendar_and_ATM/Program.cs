@@ -59,7 +59,7 @@ namespace Practical1_2
             }
 
             // Определяем день недели для введённого числа
-            int dayOfWeek = (startDay + day - 1) % 7;
+            int dayOfWeek = ((startDay - 1) + (day - 1)) % 7 + 1;
             if (dayOfWeek == 0) dayOfWeek = 7;
 
             bool isWeekend = (dayOfWeek == 6 || dayOfWeek == 7);
@@ -77,8 +77,10 @@ namespace Practical1_2
             int amount;
             while (true)
             {
-                Console.Write("Введите сумму для снятия (до 150000, кратно 100): ");
-                if (int.TryParse(Console.ReadLine(), out amount))
+                Console.Write("Введите сумму для снятия (до 150000, кратно 100, q - выход): ");
+                string input = Console.ReadLine();
+                if (input?.ToLower() == "q") return;
+                if (int.TryParse(input, out amount))
                 {
                     if (amount % 100 != 0)
                     {
