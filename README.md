@@ -191,6 +191,7 @@ dotnet build
 dotnet run --project PR_1_2_Calendar_and_ATM
 dotnet run --project Calculator_PR1_PKS
 dotnet run --project KR_2_all
+```
 
 ---
 
