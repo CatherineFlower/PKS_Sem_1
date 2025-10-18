@@ -38,6 +38,8 @@ namespace Pks_Practice2_Var20
                 }
             }
         }
+        
+        public enum SolutionType { Unique, None, Infinite }
 
         // ===== 1) Матрицы =====
         class Matrix
@@ -217,7 +219,71 @@ namespace Pks_Practice2_Var20
                     double t = m[r1, j]; m[r1, j] = m[r2, j]; m[r2, j] = t;
                 }
             }
+            
+            public int Rank(double eps = 1e-10) => RankOf((double[,])A.Clone(), eps);
+
+            public static int RankOf(double[,] m, double eps = 1e-10)
+            {
+                int rows = m.GetLength(0), cols = m.GetLength(1);
+                int r = 0;
+
+                for (int c = 0; c < cols && r < rows; c++)
+                {
+                    // поиск опорной строки
+                    int piv = r; double best = Math.Abs(m[r, c]);
+                    for (int i = r + 1; i < rows; i++)
+                    {
+                        double v = Math.Abs(m[i, c]);
+                        if (v > best) { best = v; piv = i; }
+                    }
+                    if (best < eps) continue;
+
+                    // перестановка строк
+                    if (piv != r)
+                        for (int j = c; j < cols; j++)
+                            (m[r, j], m[piv, j]) = (m[piv, j], m[r, j]);
+
+                    // приведение к ступенчатому виду
+                    double div = m[r, c];
+                    for (int j = c; j < cols; j++) m[r, j] /= div;
+
+                    for (int i = 0; i < rows; i++)
+                    {
+                        if (i == r) continue;
+                        double f = m[i, c];
+                        if (Math.Abs(f) < eps) continue;
+                        for (int j = c; j < cols; j++) m[i, j] -= f * m[r, j];
+                    }
+                    r++;
+                }
+                return r;
+            }
+            
+            public (SolutionType kind, double[]? x) SolveClassify(double[] b, double eps = 1e-10)
+            {
+                if (R != C) return (SolutionType.Infinite, null); // неквадратная — точно не единственное
+
+                int n = R;
+
+                // rank(A)
+                int rankA = this.Rank(eps);
+
+                // rank([A|b])
+                var aug = new double[n, n + 1];
+                for (int i = 0; i < n; i++)
+                {
+                    for (int j = 0; j < n; j++) aug[i, j] = A[i, j];
+                    aug[i, n] = b[i];
+                }
+                int rankAug = RankOf(aug, eps);
+
+                if (rankA < rankAug) return (SolutionType.None, null);
+                if (rankA == n)      return (SolutionType.Unique, Matrix.Solve(this, b));
+                return (SolutionType.Infinite, null);
+            }
         }
+        
+        
 
         static void MatrixMenu()
         {
@@ -241,13 +307,36 @@ namespace Pks_Practice2_Var20
                         case "4": A.Inverse().Print("A^{-1}:"); break;
                         case "5": A.T().Print("A^T:"); break;
                         case "6":
-                            if (A.R != A.C) { Console.WriteLine("A не квадратная — систему решить нельзя."); break; }
+                        {
+                            if (A.R != A.C) { Console.WriteLine("A не квадратная — у системы нет единственного решения."); break; }
+
                             var b = new double[A.R];
                             for (int i = 0; i < A.R; i++) b[i] = ReadDouble($"b[{i + 1}]=");
-                            var x = Matrix.Solve(A, b);
-                            Console.WriteLine("x (решение Ax=b):");
-                            for (int i = 0; i < x.Length; i++) Console.WriteLine($"x{i + 1} = {x[i]:F6}");
+
+                            try
+                            {
+                                var (kind, x) = A.SolveClassify(b);
+                                switch (kind)
+                                {
+                                    case SolutionType.Unique:
+                                        Console.WriteLine("Единственное решение:");
+                                        for (int i = 0; i < x!.Length; i++)
+                                            Console.WriteLine($"x{i + 1} = {x[i]:F6}");
+                                        break;
+                                    case SolutionType.None:
+                                        Console.WriteLine("Система несовместна: решений нет.");
+                                        break;
+                                    case SolutionType.Infinite:
+                                        Console.WriteLine("Система совместна, но имеет бесконечно много решений.");
+                                        break;
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                Console.WriteLine($"Ошибка при решении: {ex.Message}");
+                            }
                             break;
+                        }
                         case "0": return;
                         default: Console.WriteLine("Неверно."); break;
                     }
@@ -289,13 +378,46 @@ namespace Pks_Practice2_Var20
             Console.WriteLine($"n-й член: x^(2n+1)/(2n+1) = {nth:F6}");
         }
 
-        // ===== 3) Счастливый билет =====
+        // ===== 3) Счастливый билет (не обрезать ведущие нули, без int.Parse) =====
         static void LuckyTicket()
         {
-            int t = ReadInt("Введите шестизначный номер билета: ", 0, 999999);
-            int d1 = (t / 100000) % 10, d2 = (t / 10000) % 10, d3 = (t / 1000) % 10;
-            int d4 = (t / 100) % 10, d5 = (t / 10) % 10, d6 = t % 10;
-            Console.WriteLine((d1 + d2 + d3) == (d4 + d5 + d6) ? "Счастливый (True)" : "Нет (False)");
+            while (true)
+            {
+                Console.Write("Введите шестизначный номер билета: ");
+                string? s = Console.ReadLine();
+
+                if (string.IsNullOrWhiteSpace(s))
+                {
+                    Console.WriteLine("Ошибка: пустой ввод.\n");
+                    continue;
+                }
+
+                s = s.Trim();
+
+                // Ровно 6 символов, только цифры 0..9 — никаких пробелов/знаков.
+                if (s.Length != 6)
+                {
+                    Console.WriteLine("Ошибка: номер билета должен содержать ровно 6 цифр.\n");
+                    continue;
+                }
+                bool digitsOnly = true;
+                foreach (char ch in s)
+                {
+                    if (ch < '0' || ch > '9') { digitsOnly = false; break; }
+                }
+                if (!digitsOnly)
+                {
+                    Console.WriteLine("Ошибка: номер билета должен состоять только из цифр 0–9.\n");
+                    continue;
+                }
+
+                // Суммы считаем по символам, без преобразования строки в число.
+                int sum1 = (s[0] - '0') + (s[1] - '0') + (s[2] - '0');
+                int sum2 = (s[3] - '0') + (s[4] - '0') + (s[5] - '0');
+
+                Console.WriteLine(sum1 == sum2 ? "Счастливый (True)" : "Нет (False)");
+                break;
+            }
         }
 
         // ===== 4) Сокращение дроби =====
@@ -327,18 +449,26 @@ namespace Pks_Practice2_Var20
         static void CoffeeMachine()
         {
             int water = ReadInt("Введите количество воды в мл: ", 0, int.MaxValue);
-            int milk = ReadInt("Введите количество молока в мл: ", 0, int.MaxValue);
+            int milk  = ReadInt("Введите количество молока в мл: ", 0, int.MaxValue);
             int cupsA = 0, cupsL = 0, revenue = 0;
+
             while (true)
             {
                 bool canA = water >= 300;
                 bool canL = water >= 30 && milk >= 270;
+
                 if (!canA && !canL)
                 {
                     PrintCoffeeReport(water, milk, cupsA, cupsL, revenue);
                     return;
                 }
-                Console.Write("Выберите напиток (1 — американо, 2 — латте, q — завершить): ");
+
+                // Печатаем только доступные варианты
+                Console.Write("Выберите напиток: ");
+                if (canA) Console.Write("[1 — американо] ");
+                if (canL) Console.Write("[2 — латте] ");
+                Console.Write("[q — завершить]: ");
+
                 string? s = Console.ReadLine();
                 if (s == "q")
                 {
@@ -346,17 +476,25 @@ namespace Pks_Practice2_Var20
                     PrintCoffeeReport(water, milk, cupsA, cupsL, revenue);
                     return;
                 }
+
                 if (s == "1")
                 {
-                    if (!canA) { Console.WriteLine("Не хватает воды"); continue; }
+                    if (!canA) { Console.WriteLine("Американо сейчас недоступен (не хватает воды)."); continue; }
                     water -= 300; cupsA++; revenue += 150; Console.WriteLine("Ваш напиток готов.");
                 }
                 else if (s == "2")
                 {
-                    if (!canL) { Console.WriteLine(water < 30 ? "Не хватает воды" : "Не хватает молока"); continue; }
+                    if (!canL)
+                    {
+                        Console.WriteLine(water < 30 ? "Латте недоступен (не хватает воды)." : "Латте недоступен (не хватает молока).");
+                        continue;
+                    }
                     water -= 30; milk -= 270; cupsL++; revenue += 170; Console.WriteLine("Ваш напиток готов.");
                 }
-                else Console.WriteLine("Некорректный выбор.");
+                else
+                {
+                    Console.WriteLine("Некорректный ввод. Выберите доступный вариант.");
+                }
             }
         }
         static void PrintCoffeeReport(int water, int milk, int cupsA, int cupsL, int revenue)
@@ -384,7 +522,7 @@ namespace Pks_Practice2_Var20
             }
         }
 
-        // ===== 8) Колонизация Марса =====
+        // ===== 8) Колонизация Марса (смешанные ориентации, горизонт/вертик разрез) =====
         static void MarsColonization()
         {
             long n = ReadLong("Введите n (кол-во модулей): ");
@@ -393,23 +531,136 @@ namespace Pks_Practice2_Var20
             long w = ReadLong("Введите w (ширина поля): ");
             long h = ReadLong("Введите h (высота поля): ");
 
-            long lo = 0, hi = (long)1e9; // оценка сверху
+            // Предупреждение: что максимум возможно при d = 0 (самые маленькие модули)
+            long maxAtZero = MaxPlaceMixed(n, a, b, w, h, 0);
+            if (maxAtZero < n)
+            {
+                Console.WriteLine($"Предупреждение: даже без защиты (d = 0) можно разместить максимум {maxAtZero} модулей. Требуется {n}.");
+                Console.WriteLine("Ответ d = 0");
+                return;
+            }
+
+            long lo = 0, hi = (long)1e9;
             while (lo < hi)
             {
                 long mid = (lo + hi + 1) / 2;
-                if (CanPlace(n, a, b, w, h, mid)) lo = mid; else hi = mid - 1;
+                if (CanPlaceMixed(n, a, b, w, h, mid)) lo = mid; else hi = mid - 1;
             }
             Console.WriteLine($"Ответ d = {lo}");
         }
-        static bool CanPlace(long n, long a, long b, long w, long h, long d)
+
+        // Проверяем, можно ли разместить >= n модулей при данном d,
+        // разрешая СМЕШАННЫЕ ориентации и горизонтальный/вертикальный «разрез» поля.
+        static bool CanPlaceMixed(long n, long a, long b, long W, long H, long d)
         {
-            long W1 = (a + 2 * d) <= 0 ? 0 : w / (a + 2 * d);
-            long H1 = (b + 2 * d) <= 0 ? 0 : h / (b + 2 * d);
-            long W2 = (b + 2 * d) <= 0 ? 0 : w / (b + 2 * d);
-            long H2 = (a + 2 * d) <= 0 ? 0 : h / (a + 2 * d);
-            bool o1 = (W1 > 0 && H1 > 0 && W1 * H1 >= n);
-            bool o2 = (W2 > 0 && H2 > 0 && W2 * H2 >= n);
-            return o1 || o2;
+            long wA = a + 2 * d, hA = b + 2 * d; // ориентация А: a×b
+            long wB = b + 2 * d, hB = a + 2 * d; // ориентация B: b×a (поворот)
+
+            if (wA <= 0 || hA <= 0 || wB <= 0 || hB <= 0) return false;
+            // если модуль больше поля по обеим ориентациям — сразу нет
+            if ((wA > W || hA > H) && (wB > W || hB > H)) return false;
+
+            // 1) Горизонтальный разрез: сверху rA рядов ориентации A, снизу — ориентация B
+            long rowsAmax = H / hA;
+            for (long rA = 0; rA <= rowsAmax; rA++)
+            {
+                long cntA = rA * (W / wA);
+                long remH = H - rA * hA;
+                long rowsB = remH / hB;
+                long cntB = rowsB * (W / wB);
+                if (cntA + cntB >= n) return true;
+            }
+
+            // 2) Горизонтальный разрез, но верх/низ меняем местами (сначала B, потом A)
+            long rowsBmax = H / hB;
+            for (long rB = 0; rB <= rowsBmax; rB++)
+            {
+                long cntB = rB * (W / wB);
+                long remH = H - rB * hB;
+                long rowsA = remH / hA;
+                long cntA = rowsA * (W / wA);
+                if (cntA + cntB >= n) return true;
+            }
+
+            // 3) Вертикальный разрез: слева cA столбцов ориентации A, справа — B
+            long colsAmax = W / wA;
+            for (long cA = 0; cA <= colsAmax; cA++)
+            {
+                long cntA = cA * (H / hA);
+                long remW = W - cA * wA;
+                long colsB = remW / wB;
+                long cntB = colsB * (H / hB);
+                if (cntA + cntB >= n) return true;
+            }
+
+            // 4) Вертикальный разрез, но меняем местами (сначала B, потом A)
+            long colsBmax = W / wB;
+            for (long cB = 0; cB <= colsBmax; cB++)
+            {
+                long cntB = cB * (H / hB);
+                long remW = W - cB * wB;
+                long colsA = remW / wA;
+                long cntA = colsA * (H / hA);
+                if (cntA + cntB >= n) return true;
+            }
+
+            // 5) Быстрая проверка «чистой» ориентации (на всякий случай)
+            long pureA = (W / wA) * (H / hA);
+            long pureB = (W / wB) * (H / hB);
+            return Math.Max(pureA, pureB) >= n;
+        }
+
+        // Сколько максимум модулей можно уместить при данном d,
+        // учитывая смешанные раскладки (для предупреждения при d=0).
+        static long MaxPlaceMixed(long n, long a, long b, long W, long H, long d)
+        {
+            long best = 0;
+            long wA = a + 2 * d, hA = b + 2 * d;
+            long wB = b + 2 * d, hB = a + 2 * d;
+
+            if (wA <= 0 || hA <= 0 || wB <= 0 || hB <= 0) return 0;
+
+            // Горизонтальные разрезы
+            long rowsAmax = H / hA;
+            for (long rA = 0; rA <= rowsAmax; rA++)
+            {
+                long cntA = rA * (W / wA);
+                long remH = H - rA * hA;
+                long cntB = (remH / hB) * (W / wB);
+                best = Math.Max(best, cntA + cntB);
+            }
+            long rowsBmax = H / hB;
+            for (long rB = 0; rB <= rowsBmax; rB++)
+            {
+                long cntB = rB * (W / wB);
+                long remH = H - rB * hB;
+                long cntA = (remH / hA) * (W / wA);
+                best = Math.Max(best, cntA + cntB);
+            }
+
+            // Вертикальные разрезы
+            long colsAmax = W / wA;
+            for (long cA = 0; cA <= colsAmax; cA++)
+            {
+                long cntA = cA * (H / hA);
+                long remW = W - cA * wA;
+                long cntB = (remW / wB) * (H / hB);
+                best = Math.Max(best, cntA + cntB);
+            }
+            long colsBmax = W / wB;
+            for (long cB = 0; cB <= colsBmax; cB++)
+            {
+                long cntB = cB * (H / hB);
+                long remW = W - cB * wB;
+                long cntA = (remW / wA) * (H / hA);
+                best = Math.Max(best, cntA + cntB);
+            }
+
+            // Чистые ориентации
+            long pureA = (W / wA) * (H / hA);
+            long pureB = (W / wB) * (H / hB);
+            best = Math.Max(best, Math.Max(pureA, pureB));
+            return best;
         }
 
         // ===== ЕДИНЫЕ утилиты ввода (без дублей!) =====
